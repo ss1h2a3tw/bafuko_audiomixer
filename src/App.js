@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TEST_DRUM = 'https://audio_bafuko_moe.storage.googleapis.com/drum.wav';
+const TEST_DRUM = 'https://audio_bafuko_moe.storage.googleapis.com/drum.mp3';
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 
 class App extends React.Component {
