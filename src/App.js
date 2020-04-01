@@ -16,6 +16,7 @@ class App extends React.Component {
       audioLoaded: [],
       audioLoading: [],
       audioGain: [],
+      audioMute: [],
     };
     this.audio = [];
   }
@@ -28,6 +29,7 @@ class App extends React.Component {
         this.audio = res;
         for (let audioElement of res) {
           audioElement['gain'] = 100;
+          audioElement['mute'] = false;
           audioElement['length'] = 0;
           audioElement['sampleRate'] = 0;
           audioElement['offset'] = 0;
@@ -39,11 +41,13 @@ class App extends React.Component {
           audioLoaded: [],
           audioLoading: [],
           audioGain: [],
+          audioMute: [],
         };
         for (const idx in res) {
           nextState.audioLoaded.push(false);
           nextState.audioLoading.push(res[idx].default);
           nextState.audioGain.push(100);
+          nextState.audioMute.push(false);
           this.audio[idx].loading = res[idx].default;
           if (res[idx].default) {
             pendingToLoad.push(idx);
@@ -92,7 +96,7 @@ class App extends React.Component {
       });
   }
   renderAudio() {
-    if (this.mainNode) {
+    if (this.playing) {
       this.mainNode.stop();
     }
     // max sample count (as SAMPLE_RATE)
@@ -119,7 +123,7 @@ class App extends React.Component {
           .then((audioBuffer) => {
             let sourceNode = actx.createBufferSource();
             let gainNode = actx.createGain();
-            gainNode.gain.value = element.gain / 100;
+            gainNode.gain.value = element.mute ? 0 : element.gain / 100;
             sourceNode.buffer = audioBuffer;
             sourceNode.connect(gainNode);
             gainNode.connect(actx.destination);
@@ -134,6 +138,9 @@ class App extends React.Component {
         this.mainNode = this.actx.createBufferSource();
         this.mainNode.buffer = buffer;
         this.mainNode.connect(this.actx.destination);
+        this.mainNode.onended = () => {
+          this.playing = false;
+        };
         this.setState({
           audioRendered: true,
           audioRendering: false,
@@ -143,27 +150,30 @@ class App extends React.Component {
   }
   play() {
     this.mainNode.start();
+    this.playing = true;
   }
-  setGain(idx, amount) {
-    this.audio[idx].gain = amount;
+  setVal(stateArrayName, memberName, idx, val) {
+    this.audio[idx][memberName] = val;
     this.setState((prevState) => {
-      let nextAudioGain = [...prevState.audioGain];
-      nextAudioGain[idx] = amount;
-      return {
-        audioGain: nextAudioGain,
-        audioRendered: false,
-      };
+      let nextStateArray = [...prevState[stateArrayName]];
+      nextStateArray[idx] = val;
+      let nextState = { audioRendered: false };
+      nextState[stateArrayName] = nextStateArray;
+      return nextState;
     });
   }
   onChangeGain(idx, ev) {
-    console.log(idx);
-    this.setGain(idx, ev.target.value);
+    this.setVal('audioGain', 'gain', idx, ev.target.value);
+  }
+  onChangeMute(idx, ev) {
+    console.log(ev);
+    this.setVal('audioMute', 'mute', idx, ev.target.checked);
   }
   genAudioDiv(idx) {
     let now = this.audio[idx];
     return (
       <div key={'audio' + idx}>
-        <div className="audioName">
+        <div className='audioName'>
           {now.name}
           {!now.loaded ? ' disabled' : ''}
         </div>
@@ -172,11 +182,17 @@ class App extends React.Component {
         ) : (
           <>
             <input
-              type="range"
-              min="0"
-              max="150"
+              type='checkbox'
+              value={this.state.audioMute[idx]}
+              disabled={!now.loaded}
+              onChange={this.onChangeMute.bind(this, idx)}
+            />
+            <input
+              type='range'
+              min='0'
+              max='150'
               value={this.state.audioGain[idx]}
-              className="slider"
+              className='slider'
               disabled={!now.loaded}
               onChange={this.onChangeGain.bind(this, idx)}
             />
