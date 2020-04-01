@@ -12,21 +12,22 @@ class App extends React.Component {
     this.state = {
       metaLoaded: false,
       audioRendered: false,
+      audioRendering: true,
       audioLoaded: [],
       audioLoading: [],
+      audioGain: [],
     };
     this.audio = [];
   }
   componentDidMount() {
     this.actx = new AudioContext();
-    this.mainNode = this.actx.createBufferSource();
     fetch(META_URL)
       .then((res) => res.json())
       .then((res) => {
         let pendingToLoad = [];
         this.audio = res;
         for (let audioElement of res) {
-          audioElement['gain'] = 1;
+          audioElement['gain'] = 100;
           audioElement['length'] = 0;
           audioElement['sampleRate'] = 0;
           audioElement['offset'] = 0;
@@ -37,10 +38,12 @@ class App extends React.Component {
           metaLoaded: true,
           audioLoaded: [],
           audioLoading: [],
+          audioGain: [],
         };
         for (const idx in res) {
           nextState.audioLoaded.push(false);
           nextState.audioLoading.push(res[idx].default);
+          nextState.audioGain.push(100);
           this.audio[idx].loading = res[idx].default;
           if (res[idx].default) {
             pendingToLoad.push(idx);
@@ -89,6 +92,9 @@ class App extends React.Component {
       });
   }
   renderAudio() {
+    if (this.mainNode) {
+      this.mainNode.stop();
+    }
     // max sample count (as SAMPLE_RATE)
     let maxLength = 0;
     // get the min negative offset
@@ -112,8 +118,11 @@ class App extends React.Component {
           .then((arrayBuffer) => actx.decodeAudioData(arrayBuffer))
           .then((audioBuffer) => {
             let sourceNode = actx.createBufferSource();
+            let gainNode = actx.createGain();
+            gainNode.gain.value = element.gain / 100;
             sourceNode.buffer = audioBuffer;
-            sourceNode.connect(actx.destination);
+            sourceNode.connect(gainNode);
+            gainNode.connect(actx.destination);
             sourceNode.start(minOffset + element.offset * (SAMPLE_RATE / 1000));
           });
         promise.push(current);
@@ -122,25 +131,79 @@ class App extends React.Component {
     Promise.all(promise).then(() => {
       actx.startRendering().then((buffer) => {
         console.log('Rendering completed successfully');
+        this.mainNode = this.actx.createBufferSource();
         this.mainNode.buffer = buffer;
         this.mainNode.connect(this.actx.destination);
-        this.setState({ audioRendered: true });
+        this.setState({
+          audioRendered: true,
+          audioRendering: false,
+        });
       });
     });
   }
   play() {
     this.mainNode.start();
   }
+  setGain(idx, amount) {
+    this.audio[idx].gain = amount;
+    this.setState((prevState) => {
+      let nextAudioGain = [...prevState.audioGain];
+      nextAudioGain[idx] = amount;
+      return {
+        audioGain: nextAudioGain,
+        audioRendered: false,
+      };
+    });
+  }
+  onChangeGain(idx, ev) {
+    console.log(idx);
+    this.setGain(idx, ev.target.value);
+  }
+  genAudioDiv(idx) {
+    let now = this.audio[idx];
+    return (
+      <div key={'audio' + idx}>
+        <div className="audioName">
+          {now.name}
+          {!now.loaded ? ' disabled' : ''}
+        </div>
+        {!now.loaded ? (
+          <></>
+        ) : (
+          <>
+            <input
+              type="range"
+              min="0"
+              max="150"
+              value={this.state.audioGain[idx]}
+              className="slider"
+              disabled={!now.loaded}
+              onChange={this.onChangeGain.bind(this, idx)}
+            />
+          </>
+        )}
+      </div>
+    );
+  }
+  isLoading() {
+    return this.state.audioLoading.some((element) => {
+      return element;
+    });
+  }
   render() {
-    if (!this.state.metaLoaded) {
+    if (!this.state.metaLoaded || this.isLoading()) {
       return <>LOADING!</>;
-    } else if (!this.state.audioRendered) {
-      return <>RENDERING!</>;
     } else {
       return (
         <>
-          {this.filesize}
+          {this.state.audioRendering ? 'RENDERING!' : ''}
+          {!this.state.audioRendering && !this.state.audioRendered ? (
+            <button onClick={this.renderAudio.bind(this)}>RENDER</button>
+          ) : (
+            <></>
+          )}
           <button onClick={this.play.bind(this)}>PLAY</button>
+          {this.audio.map((e, i) => this.genAudioDiv(i))}
         </>
       );
     }
