@@ -113,7 +113,8 @@ class App extends React.Component {
     }
     // from ms to sample count and make it positive
     minOffset *= -(SAMPLE_RATE / 1000);
-    let actx = new OfflineAudioContext(2, maxLength + minOffset, SAMPLE_RATE);
+    this.length = maxLength + minOffset;
+    let actx = new OfflineAudioContext(2, this.length, SAMPLE_RATE);
     this.offlineActx = actx;
     let promise = [];
     for (const element of this.audio) {
@@ -144,22 +145,38 @@ class App extends React.Component {
       });
     });
   }
+  getPlayingProgress() {
+    console.log(this.actx.getOutputTimestamp().contextTime - this.startTime);
+    return this.actx.getOutputTimestamp().contextTime - this.startTime;
+  }
+  startFrom(offset) {
+    this.mainNode = this.actx.createBufferSource();
+    this.mainNode.buffer = this.buffer;
+    this.mainNode.connect(this.actx.destination);
+    this.mainNode.onended = () => {
+      this.playing = false;
+      this.setState({ playing: false });
+    };
+    this.mainNode.start(0, offset);
+    this.playing = true;
+    // pretend that we started the playback previously
+    this.startTime = this.actx.getOutputTimestamp().contextTime - offset;
+    this.setState({ playing: true });
+  }
   togglePlay() {
     if (this.playing) {
       this.mainNode.stop();
       this.mainNode.disconnect();
+      this.pausedAt = this.getPlayingProgress();
+      this.paused = true;
       // state will change on the onended callback
     } else {
-      this.mainNode = this.actx.createBufferSource();
-      this.mainNode.buffer = this.buffer;
-      this.mainNode.connect(this.actx.destination);
-      this.mainNode.onended = () => {
-        this.playing = false;
-        this.setState({ playing: false });
-      };
-      this.mainNode.start();
-      this.playing = true;
-      this.setState({ playing: true });
+      if (this.paused) {
+        this.startFrom(this.pausedAt);
+      } else {
+        this.startFrom(0);
+      }
+      this.paused = false;
     }
   }
   setVal(stateArrayName, memberName, idx, val) {
@@ -231,6 +248,7 @@ class App extends React.Component {
           <button onClick={this.togglePlay.bind(this)}>
             {this.state.playing ? 'STOP' : 'PLAY'}
           </button>
+          <button onClick={this.getPlayingProgress.bind(this)}>DEBUG</button>
           {this.audio.map((e, i) => this.genAudioDiv(i))}
         </>
       );
