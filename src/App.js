@@ -17,6 +17,7 @@ class App extends React.Component {
       audioLoading: [],
       audioGain: [],
       audioMute: [],
+      playing: false,
     };
     this.audio = [];
   }
@@ -135,12 +136,7 @@ class App extends React.Component {
     Promise.all(promise).then(() => {
       actx.startRendering().then((buffer) => {
         console.log('Rendering completed successfully');
-        this.mainNode = this.actx.createBufferSource();
-        this.mainNode.buffer = buffer;
-        this.mainNode.connect(this.actx.destination);
-        this.mainNode.onended = () => {
-          this.playing = false;
-        };
+        this.buffer = buffer;
         this.setState({
           audioRendered: true,
           audioRendering: false,
@@ -148,9 +144,23 @@ class App extends React.Component {
       });
     });
   }
-  play() {
-    this.mainNode.start();
-    this.playing = true;
+  togglePlay() {
+    if (this.playing) {
+      this.mainNode.stop();
+      this.mainNode.disconnect();
+      // state will change on the onended callback
+    } else {
+      this.mainNode = this.actx.createBufferSource();
+      this.mainNode.buffer = this.buffer;
+      this.mainNode.connect(this.actx.destination);
+      this.mainNode.onended = () => {
+        this.playing = false;
+        this.setState({ playing: false });
+      };
+      this.mainNode.start();
+      this.playing = true;
+      this.setState({ playing: true });
+    }
   }
   setVal(stateArrayName, memberName, idx, val) {
     this.audio[idx][memberName] = val;
@@ -218,7 +228,9 @@ class App extends React.Component {
           ) : (
             <></>
           )}
-          <button onClick={this.play.bind(this)}>PLAY</button>
+          <button onClick={this.togglePlay.bind(this)}>
+            {this.state.playing ? 'STOP' : 'PLAY'}
+          </button>
           {this.audio.map((e, i) => this.genAudioDiv(i))}
         </>
       );
