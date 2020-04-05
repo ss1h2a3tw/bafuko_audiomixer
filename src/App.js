@@ -1,7 +1,15 @@
 import React from 'react';
+import './App.css';
 
 const META_URL = 'https://audio_bafuko_moe.storage.googleapis.com/meta.json';
 const SAMPLE_RATE = 44100;
+// sampling in 1/10 sec
+const SAMPLE_BIN_DIV = 10;
+// update the UI every 1000ms when playing
+const UPDATE_INTERVAL = 100;
+// scroll speed of the visualization. Need to be corresponded with the width of
+// the width of the bars of the visualization.
+const PIXEL_PER_SEC = 80;
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 var OfflineAudioContext = window.OfflineAudioContext;
@@ -18,8 +26,24 @@ class App extends React.Component {
       audioGain: [],
       audioMute: [],
       playing: false,
+      paused: false,
+      playingProgress: 0,
     };
     this.audio = [];
+    this.intervalHandle = undefined;
+  }
+  startUpdateInterval() {
+    if (this.intervalHandle !== undefined) {
+      window.clearInterval(this.intervalHandle);
+    }
+    this.intervalHandle = window.setInterval(
+      this.updatePlayingState.bind(this),
+      UPDATE_INTERVAL
+    );
+  }
+  stopUpdateInterval() {
+    window.clearInterval(this.intervalHandle);
+    this.intervalHandle = undefined;
   }
   componentDidMount() {
     this.actx = new AudioContext();
@@ -93,8 +117,44 @@ class App extends React.Component {
       .then((buffer) => {
         audio.length = buffer.length;
         audio.sampleRate = buffer.sampleRate;
+        this.genAmplitudeData(idx, buffer);
         this.setAudioLoaded(idx);
       });
+  }
+  genAmplitudeDOM(idx) {
+    let now = this.audio[idx];
+    now.amplitudeDOM = now.amplitudeData.map(
+      this.genAmplitudeGraphElement.bind(this, idx)
+    );
+  }
+  genAmplitudeData(idx, audioBuffer) {
+    let now = this.audio[idx];
+    console.log(audioBuffer.numberOfChannels);
+    console.log(audioBuffer.sampleRate);
+    console.log(audioBuffer.length);
+    let data = [];
+    for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+      data.push(audioBuffer.getChannelData(i));
+    }
+    console.log(data);
+    let normalized = [];
+    let i = 0;
+    const bin_size = audioBuffer.sampleRate / SAMPLE_BIN_DIV;
+    while (i < audioBuffer.length) {
+      let cnt = 0;
+      let sum = 0;
+      for (let j = 0; j < bin_size && i < audioBuffer.length; i++, j++) {
+        for (let k = 0; k < audioBuffer.numberOfChannels; k++) {
+          sum += Math.abs(data[k][i]);
+          cnt++;
+        }
+      }
+      sum /= cnt;
+      normalized.push(sum);
+    }
+    now['amplitudeData'] = normalized;
+    this.genAmplitudeDOM(idx);
+    console.log(normalized);
   }
   renderAudio() {
     if (this.playing) {
@@ -106,12 +166,14 @@ class App extends React.Component {
     let minOffset = 0;
     for (const element of this.audio) {
       if (element.loaded) {
-        const length = element.length * (SAMPLE_RATE / element.sampleRate);
+        let length = element.length * (SAMPLE_RATE / element.sampleRate);
+        length += element.offset * SAMPLE_RATE;
         minOffset = Math.min(minOffset, element.offset);
         maxLength = Math.max(maxLength, length);
       }
     }
     // from ms to sample count and make it positive
+    this.minOffset = minOffset / 1000;
     minOffset *= -(SAMPLE_RATE / 1000);
     this.length = maxLength + minOffset;
     let actx = new OfflineAudioContext(2, this.length, SAMPLE_RATE);
@@ -146,7 +208,6 @@ class App extends React.Component {
     });
   }
   getPlayingProgress() {
-    console.log(this.actx.getOutputTimestamp().contextTime - this.startTime);
     return this.actx.getOutputTimestamp().contextTime - this.startTime;
   }
   startFrom(offset) {
@@ -155,13 +216,16 @@ class App extends React.Component {
     this.mainNode.connect(this.actx.destination);
     this.mainNode.onended = () => {
       this.playing = false;
-      this.setState({ playing: false });
+      this.updatePlayingState();
+      this.stopUpdateInterval();
     };
     this.mainNode.start(0, offset);
     this.playing = true;
+    this.paused = false;
     // pretend that we started the playback previously
     this.startTime = this.actx.getOutputTimestamp().contextTime - offset;
-    this.setState({ playing: true });
+    this.updatePlayingState();
+    this.startUpdateInterval();
   }
   togglePlay() {
     if (this.playing) {
@@ -169,6 +233,7 @@ class App extends React.Component {
       this.mainNode.disconnect();
       this.pausedAt = this.getPlayingProgress();
       this.paused = true;
+      this.updatePlayingState();
       // state will change on the onended callback
     } else {
       if (this.paused) {
@@ -176,7 +241,6 @@ class App extends React.Component {
       } else {
         this.startFrom(0);
       }
-      this.paused = false;
     }
   }
   setVal(stateArrayName, memberName, idx, val) {
@@ -195,6 +259,57 @@ class App extends React.Component {
   onChangeMute(idx, ev) {
     console.log(ev);
     this.setVal('audioMute', 'mute', idx, ev.target.checked);
+  }
+  genAmpOffset(idx) {
+    let now = this.audio[idx];
+    // move to center first
+    let transform = 'translateX(50vw)';
+    let progress =
+      (this.state.playingProgress - now.offset / 1000) * -PIXEL_PER_SEC;
+    transform += 'translateX(' + Math.round(progress).toString() + 'px)';
+    return { transform: transform };
+  }
+  genAmplitudeGraphElement(audioIdx, val, idx) {
+    return (
+      <div
+        className='AmpGraphElement'
+        key={'ampEle' + audioIdx.toString() + '-' + idx.toString()}
+        style={{ height: Math.round(1000 * val).toString() + 'px' }}
+      ></div>
+    );
+  }
+  genAmplitudeGraph(idx) {
+    return (
+      <div className='AmpContainer'>
+        <div
+          className='AmpGraph'
+          style={this.genAmpOffset(idx)}
+          key={'amp' + idx.toString()}
+        >
+          {this.audio[idx].amplitudeDOM}
+        </div>
+      </div>
+    );
+  }
+  updatePlayingState() {
+    let progress = this.getPlayingProgress();
+    if (this.playing) {
+      this.setState({
+        playing: true,
+        playingProgress: progress,
+        paused: false,
+      });
+    } else {
+      if (this.paused) {
+        this.setState({
+          playing: false,
+          playingProgress: progress,
+          paused: true,
+        });
+      } else {
+        this.setState({ playing: false, playingProgress: 0, paused: false });
+      }
+    }
   }
   genAudioDiv(idx) {
     let now = this.audio[idx];
@@ -250,6 +365,10 @@ class App extends React.Component {
           </button>
           <button onClick={this.getPlayingProgress.bind(this)}>DEBUG</button>
           {this.audio.map((e, i) => this.genAudioDiv(i))}
+          {this.genAmplitudeGraph(0)}
+          {this.genAmplitudeGraph(2)}
+          {this.genAmplitudeGraph(4)}
+          {this.genAmplitudeGraph(6)}
         </>
       );
     }
