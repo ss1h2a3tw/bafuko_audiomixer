@@ -27,8 +27,10 @@ class App extends React.Component {
       audioMute: [],
       playing: false,
       paused: false,
-      playingProgress: 0,
     };
+    this.playing = false;
+    this.paused = false;
+    this.pausedAt = 0;
     this.audio = [];
     this.intervalHandle = undefined;
   }
@@ -208,6 +210,12 @@ class App extends React.Component {
     });
   }
   getPlayingProgress() {
+    if (this.playing === false) {
+      if (this.paused) {
+        return this.pausedAt;
+      }
+      return 0;
+    }
     return this.actx.getOutputTimestamp().contextTime - this.startTime;
   }
   startFrom(offset) {
@@ -217,7 +225,6 @@ class App extends React.Component {
     this.mainNode.onended = () => {
       this.playing = false;
       this.updatePlayingState();
-      this.stopUpdateInterval();
     };
     this.mainNode.start(0, offset);
     this.playing = true;
@@ -225,7 +232,7 @@ class App extends React.Component {
     // pretend that we started the playback previously
     this.startTime = this.actx.getOutputTimestamp().contextTime - offset;
     this.updatePlayingState();
-    this.startUpdateInterval();
+    this.updateAmplitudeOffset();
   }
   togglePlay() {
     if (this.playing) {
@@ -265,9 +272,9 @@ class App extends React.Component {
     // move to center first
     let transform = 'translateX(50vw)';
     let progress =
-      (this.state.playingProgress - now.offset / 1000) * -PIXEL_PER_SEC;
+      (this.getPlayingProgress() - now.offset / 1000) * -PIXEL_PER_SEC;
     transform += 'translateX(' + Math.round(progress).toString() + 'px)';
-    return { transform: transform };
+    return transform;
   }
   genAmplitudeGraphElement(audioIdx, val, idx) {
     return (
@@ -279,11 +286,13 @@ class App extends React.Component {
     );
   }
   genAmplitudeGraph(idx) {
+    const name = 'AmpGraph-' + idx.toString();
+    this.audio[idx].amplitudeClass = name;
     return (
       <div className='AmpContainer'>
         <div
-          className='AmpGraph'
-          style={this.genAmpOffset(idx)}
+          className={'AmpGraph ' + name}
+          style={{ transform: this.genAmpOffset(idx) }}
           key={'amp' + idx.toString()}
         >
           {this.audio[idx].amplitudeDOM}
@@ -291,23 +300,32 @@ class App extends React.Component {
       </div>
     );
   }
+  updateAmplitudeOffset() {
+    for (const idx in this.audio) {
+      let now = this.audio[idx];
+      if (now.loaded) {
+        let node = document.getElementsByClassName(now.amplitudeClass)[0];
+        node.style.transform = this.genAmpOffset(idx);
+      }
+    }
+    if (this.playing) {
+      requestAnimationFrame(this.updateAmplitudeOffset.bind(this));
+    }
+  }
   updatePlayingState() {
-    let progress = this.getPlayingProgress();
     if (this.playing) {
       this.setState({
         playing: true,
-        playingProgress: progress,
         paused: false,
       });
     } else {
       if (this.paused) {
         this.setState({
           playing: false,
-          playingProgress: progress,
           paused: true,
         });
       } else {
-        this.setState({ playing: false, playingProgress: 0, paused: false });
+        this.setState({ playing: false, paused: false });
       }
     }
   }
@@ -363,7 +381,7 @@ class App extends React.Component {
           <button onClick={this.togglePlay.bind(this)}>
             {this.state.playing ? 'STOP' : 'PLAY'}
           </button>
-          <button onClick={this.getPlayingProgress.bind(this)}>DEBUG</button>
+          <button onClick={this.updateAmplitudeOffset.bind(this)}>DEBUG</button>
           {this.audio.map((e, i) => this.genAudioDiv(i))}
           {this.genAmplitudeGraph(0)}
           {this.genAmplitudeGraph(2)}
