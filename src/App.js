@@ -24,6 +24,7 @@ class App extends React.Component {
       audioLoaded: [],
       audioLoading: [],
       audioGain: [],
+      audioOffset: [],
       audioMute: [],
       playing: false,
       paused: false,
@@ -69,12 +70,14 @@ class App extends React.Component {
           audioLoading: [],
           audioGain: [],
           audioMute: [],
+          audioOffset: [],
         };
         for (const idx in res) {
           nextState.audioLoaded.push(false);
           nextState.audioLoading.push(res[idx].default);
           nextState.audioGain.push(100);
           nextState.audioMute.push(false);
+          nextState.audioOffset.push(0);
           this.audio[idx].loading = res[idx].default;
           if (res[idx].default) {
             pendingToLoad.push(idx);
@@ -158,10 +161,7 @@ class App extends React.Component {
     this.genAmplitudeDOM(idx);
     console.log(normalized);
   }
-  renderAudio() {
-    if (this.playing) {
-      this.mainNode.stop();
-    }
+  calculateMinOffsetAndLength() {
     // max sample count (as SAMPLE_RATE)
     let maxLength = 0;
     // get the min negative offset
@@ -176,8 +176,13 @@ class App extends React.Component {
     }
     // from ms to sample count and make it positive
     this.minOffset = minOffset / 1000;
-    minOffset *= -(SAMPLE_RATE / 1000);
-    this.length = maxLength + minOffset;
+    this.length = maxLength - (minOffset * SAMPLE_RATE) / 1000;
+  }
+  renderAudio() {
+    if (this.playing) {
+      this.mainNode.stop();
+    }
+    this.calculateMinOffsetAndLength();
     let actx = new OfflineAudioContext(2, this.length, SAMPLE_RATE);
     this.offlineActx = actx;
     let promise = [];
@@ -193,7 +198,7 @@ class App extends React.Component {
             sourceNode.buffer = audioBuffer;
             sourceNode.connect(gainNode);
             gainNode.connect(actx.destination);
-            sourceNode.start(minOffset + element.offset * (SAMPLE_RATE / 1000));
+            sourceNode.start(-this.minOffset + element.offset / 1000);
           });
         promise.push(current);
       }
@@ -264,15 +269,19 @@ class App extends React.Component {
     this.setVal('audioGain', 'gain', idx, ev.target.value);
   }
   onChangeMute(idx, ev) {
-    console.log(ev);
     this.setVal('audioMute', 'mute', idx, ev.target.checked);
+  }
+  onChangeOffset(idx, ev) {
+    this.setVal('audioOffset', 'offset', idx, ev.target.value);
+    this.calculateMinOffsetAndLength();
   }
   genAmpOffset(idx) {
     let now = this.audio[idx];
     // move to center first
     let transform = 'translateX(50vw)';
     let progress =
-      (this.getPlayingProgress() - now.offset / 1000) * -PIXEL_PER_SEC;
+      (this.getPlayingProgress() + this.minOffset - now.offset / 1000) *
+      -PIXEL_PER_SEC;
     transform += 'translateX(' + Math.round(progress).toString() + 'px)';
     return transform;
   }
@@ -355,6 +364,12 @@ class App extends React.Component {
               className='slider'
               disabled={!now.loaded}
               onChange={this.onChangeGain.bind(this, idx)}
+            />
+            <input
+              type='number'
+              step='any'
+              value={this.state.audioOffset[idx]}
+              onChange={this.onChangeOffset.bind(this, idx)}
             />
           </>
         )}
