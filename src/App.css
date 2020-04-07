@@ -37,20 +37,20 @@
   }
 }
 
-.AmpGraph {
+.amp-graph {
   display: flex;
   justify-content: center;
   align-items: center;
   width: max-content;
 }
 
-.AmpGraphElement {
+.amp-graph-element {
   width: 8px;
   background-color: green;
   border-radius: 2px;
 }
 
-.AmpContainer {
+.amp-container {
   width: 100%;
   overflow: hidden;
 }

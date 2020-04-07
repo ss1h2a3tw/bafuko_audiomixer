@@ -288,19 +288,19 @@ class App extends React.Component {
   genAmplitudeGraphElement(audioIdx, val, idx) {
     return (
       <div
-        className='AmpGraphElement'
+        className='amp-graph-element'
         key={'ampEle' + audioIdx.toString() + '-' + idx.toString()}
         style={{ height: Math.round(1000 * val).toString() + 'px' }}
       ></div>
     );
   }
   genAmplitudeGraph(idx) {
-    const name = 'AmpGraph-' + idx.toString();
+    const name = 'amp-graph-' + idx.toString();
     this.audio[idx].amplitudeClass = name;
     return (
-      <div className='AmpContainer'>
+      <div className='amp-container'>
         <div
-          className={'AmpGraph ' + name}
+          className={'amp-graph ' + name}
           style={{ transform: this.genAmpOffset(idx) }}
           key={'amp' + idx.toString()}
         >
@@ -353,7 +353,7 @@ class App extends React.Component {
     let now = this.audio[idx];
     return (
       <div key={'audio' + idx}>
-        <div className='audioName'>
+        <div className='audio-name'>
           {now.name}
           {!now.loaded ? ' disabled' : ''}
         </div>
