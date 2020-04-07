@@ -54,3 +54,19 @@
   width: 100%;
   overflow: hidden;
 }
+
+.top-bar {
+  display: flex;
+  align-items: stretch;
+}
+
+.progress-bar {
+  flex: 1;
+  background-color: black;
+  margin-left: 0.5em;
+}
+
+.progress {
+  background-color: green;
+  height: 100%;
+}

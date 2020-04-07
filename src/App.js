@@ -237,7 +237,7 @@ class App extends React.Component {
     // pretend that we started the playback previously
     this.startTime = this.actx.getOutputTimestamp().contextTime - offset;
     this.updatePlayingState();
-    this.updateAmplitudeOffset();
+    this.updateUI();
   }
   togglePlay() {
     if (this.playing) {
@@ -309,6 +309,13 @@ class App extends React.Component {
       </div>
     );
   }
+  updateUI() {
+    this.updateAmplitudeOffset();
+    this.updateProgressBar();
+    if (this.playing) {
+      requestAnimationFrame(this.updateUI.bind(this));
+    }
+  }
   updateAmplitudeOffset() {
     for (const idx in this.audio) {
       let now = this.audio[idx];
@@ -317,9 +324,13 @@ class App extends React.Component {
         node.style.transform = this.genAmpOffset(idx);
       }
     }
-    if (this.playing) {
-      requestAnimationFrame(this.updateAmplitudeOffset.bind(this));
-    }
+  }
+  calculateProgressPercent() {
+    return (this.getPlayingProgress() / (this.length / SAMPLE_RATE)) * 100;
+  }
+  updateProgressBar() {
+    let node = document.getElementsByClassName('progress')[0];
+    node.style.width = this.calculateProgressPercent().toString() + '%';
   }
   updatePlayingState() {
     if (this.playing) {
@@ -393,10 +404,22 @@ class App extends React.Component {
           ) : (
             <></>
           )}
-          <button onClick={this.togglePlay.bind(this)}>
-            {this.state.playing ? 'STOP' : 'PLAY'}
-          </button>
-          <button onClick={this.updateAmplitudeOffset.bind(this)}>DEBUG</button>
+          <div className='top-bar'>
+            <div className='playing-control'>
+              <button onClick={this.togglePlay.bind(this)}>
+                {this.state.playing ? 'STOP' : 'PLAY'}
+              </button>
+              <button onClick={this.updateUI.bind(this)}>DEBUG</button>
+            </div>
+            <div className='progress-bar'>
+              <div
+                className='progress'
+                style={{
+                  width: this.calculateProgressPercent().toString() + '%',
+                }}
+              ></div>
+            </div>
+          </div>
           {this.audio.map((e, i) => this.genAudioDiv(i))}
           {this.genAmplitudeGraph(0)}
           {this.genAmplitudeGraph(2)}
