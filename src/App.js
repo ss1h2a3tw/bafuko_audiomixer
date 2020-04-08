@@ -239,14 +239,17 @@ class App extends React.Component {
     this.updatePlayingState();
     this.updateUI();
   }
+  pause() {
+    this.mainNode.stop();
+    this.mainNode.disconnect();
+    this.pausedAt = this.getPlayingProgress();
+    this.paused = true;
+    this.updatePlayingState();
+    // state will change on the onended callback
+  }
   togglePlay() {
     if (this.playing) {
-      this.mainNode.stop();
-      this.mainNode.disconnect();
-      this.pausedAt = this.getPlayingProgress();
-      this.paused = true;
-      this.updatePlayingState();
-      // state will change on the onended callback
+      this.pause();
     } else {
       if (this.paused) {
         this.startFrom(this.pausedAt);
@@ -414,6 +417,47 @@ class App extends React.Component {
       </div>
     );
   }
+  adjustProgressPercent(percent) {
+    let length = this.length / SAMPLE_RATE;
+    this.pausedAt = length * percent;
+  }
+  handleProgressBarMouseMove(x, width, ev) {
+    let percent = (ev.clientX - x) / width;
+    percent = Math.min(1, percent);
+    percent = Math.max(0, percent);
+    this.adjustProgressPercent(percent);
+    this.updateUI();
+  }
+  handleProgressBarMouseUp(x, width, wasPlaying, ev) {
+    window.removeEventListener('mouseup', this.mouseUpHandler);
+    window.removeEventListener('mousemove', this.mouseMoveHandler);
+    this.handleProgressBarMouseMove(x, width, ev);
+    if (wasPlaying) {
+      this.startFrom(this.pausedAt);
+    }
+  }
+  handleProgressBarMouseDown(ev) {
+    let wasPlaying = this.playing;
+    if (wasPlaying) {
+      this.pause();
+    }
+    this.paused = true;
+    let node = document.getElementsByClassName('progress-bar')[0];
+    let rect = node.getBoundingClientRect();
+    this.mouseUpHandler = this.handleProgressBarMouseUp.bind(
+      this,
+      rect.x,
+      rect.width,
+      wasPlaying
+    );
+    this.mouseMoveHandler = this.handleProgressBarMouseMove.bind(
+      this,
+      rect.x,
+      rect.width
+    );
+    window.addEventListener('mouseup', this.mouseUpHandler);
+    window.addEventListener('mousemove', this.mouseMoveHandler);
+  }
   isLoading() {
     return this.state.audioLoading.some((element) => {
       return element;
@@ -439,7 +483,10 @@ class App extends React.Component {
               <button onClick={this.updateUI.bind(this)}>DEBUG</button>
               <div className='progress-text'>{this.genProgressText()}</div>
             </div>
-            <div className='progress-bar'>
+            <div
+              className='progress-bar'
+              onMouseDown={this.handleProgressBarMouseDown.bind(this)}
+            >
               <div
                 className='progress'
                 style={{
