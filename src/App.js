@@ -312,6 +312,7 @@ class App extends React.Component {
   updateUI() {
     this.updateAmplitudeOffset();
     this.updateProgressBar();
+    this.updateProgressText();
     if (this.playing) {
       requestAnimationFrame(this.updateUI.bind(this));
     }
@@ -324,6 +325,10 @@ class App extends React.Component {
         node.style.transform = this.genAmpOffset(idx);
       }
     }
+  }
+  updateProgressText() {
+    let node = document.getElementsByClassName('progress-text')[0];
+    node.innerHTML = this.genProgressText();
   }
   calculateProgressPercent() {
     return (this.getPlayingProgress() / (this.length / SAMPLE_RATE)) * 100;
@@ -348,6 +353,28 @@ class App extends React.Component {
         this.setState({ playing: false, paused: false });
       }
     }
+  }
+  genTimeStringFromSec(val) {
+    val = Math.round(val * 1000);
+    let ms = val % 1000;
+    val = Math.floor(val / 1000);
+    let sec = val % 60;
+    val = Math.floor(val / 60);
+    let min = val;
+    return (
+      min.toString() +
+      ':' +
+      sec.toString().padStart(2, '0') +
+      '.' +
+      ms.toString().padStart(3, '0')
+    );
+  }
+  genProgressText() {
+    return (
+      this.genTimeStringFromSec(this.getPlayingProgress()) +
+      ' / ' +
+      this.genTimeStringFromSec(this.length / SAMPLE_RATE)
+    );
   }
   genAudioDiv(idx) {
     let now = this.audio[idx];
@@ -410,6 +437,7 @@ class App extends React.Component {
                 {this.state.playing ? 'STOP' : 'PLAY'}
               </button>
               <button onClick={this.updateUI.bind(this)}>DEBUG</button>
+              <div className='progress-text'>{this.genProgressText()}</div>
             </div>
             <div className='progress-bar'>
               <div

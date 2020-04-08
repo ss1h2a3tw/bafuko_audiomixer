@@ -70,3 +70,9 @@
   background-color: green;
   height: 100%;
 }
+
+.playing-control {
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+}
