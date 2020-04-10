@@ -1,5 +1,6 @@
 import React from 'react';
 import './App.css';
+import { encodeWAV } from './EncodeWav';
 
 const META_URL = 'https://audio_bafuko_moe.storage.googleapis.com/meta.json';
 const SAMPLE_RATE = 44100;
@@ -493,6 +494,16 @@ class App extends React.Component {
     window.addEventListener('mouseup', this.mouseUpHandler);
     window.addEventListener('mousemove', this.mouseMoveHandler);
   }
+  downloadWAV() {
+    let buffer = encodeWAV(this.buffer);
+    let blob = new Blob([buffer], { type: 'octect/stream' });
+    let url = window.URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.download = 'music.wav';
+    a.href = url;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
   isLoading() {
     return this.state.audioLoading.some((element) => {
       return element;
@@ -513,7 +524,7 @@ class App extends React.Component {
               ) : (
                 <> Rendering </>
               )}
-              <button onClick={this.updateUI.bind(this)}>DEBUG</button>
+              <button onClick={this.downloadWAV.bind(this)}>DOWNLOAD</button>
               <div className='progress-text'>{this.genProgressText()}</div>
             </div>
             <div
