@@ -20,7 +20,7 @@ class App extends React.Component {
     this.state = {
       metaLoaded: false,
       audioRendered: false,
-      audioRendering: true,
+      audioRendering: false,
       audioLoaded: [],
       audioLoading: [],
       audioGain: [],
@@ -34,6 +34,7 @@ class App extends React.Component {
     this.pausedAt = 0;
     this.audio = [];
     this.intervalHandle = undefined;
+    this.continueAfterRender = false;
   }
   startUpdateInterval() {
     if (this.intervalHandle !== undefined) {
@@ -169,7 +170,7 @@ class App extends React.Component {
     for (const element of this.audio) {
       if (element.loaded) {
         let length = element.length * (SAMPLE_RATE / element.sampleRate);
-        length += element.offset * SAMPLE_RATE;
+        length += (element.offset / 1000) * SAMPLE_RATE;
         minOffset = Math.min(minOffset, element.offset);
         maxLength = Math.max(maxLength, length);
       }
@@ -180,11 +181,14 @@ class App extends React.Component {
   }
   renderAudio() {
     if (this.playing) {
-      this.mainNode.stop();
+      this.pause();
     }
+    this.setState({ audioRendering: true });
     this.calculateMinOffsetAndLength();
     let actx = new OfflineAudioContext(2, this.length, SAMPLE_RATE);
     this.offlineActx = actx;
+    this.offlineActx['actxId'] = Math.random();
+    this.offlineActxId = this.offlineActx.actxId;
     let promise = [];
     for (const element of this.audio) {
       if (element.loaded) {
@@ -205,12 +209,20 @@ class App extends React.Component {
     }
     Promise.all(promise).then(() => {
       actx.startRendering().then((buffer) => {
+        if (actx.actxId !== this.offlineActxId) {
+          console.log('skip old render');
+          return;
+        }
         console.log('Rendering completed successfully');
         this.buffer = buffer;
         this.setState({
           audioRendered: true,
           audioRendering: false,
         });
+        if (this.continueAfterRender) {
+          this.startFrom(this.pausedAt);
+          this.continueAfterRender = false;
+        }
       });
     });
   }
@@ -268,13 +280,36 @@ class App extends React.Component {
       return nextState;
     });
   }
+  reRenderMouseUp() {
+    window.removeEventListener('mouseup', this.mouseUpHandler);
+    console.log('triggered');
+    this.renderAudio();
+  }
+  reRenderWhenRelease() {
+    if (this.playing) {
+      this.pause();
+      this.continueAfterRender = true;
+    }
+    this.mouseUpHandler = this.reRenderMouseUp.bind(this);
+    window.addEventListener('mouseup', this.mouseUpHandler);
+  }
   onChangeGain(idx, ev) {
+    this.reRenderWhenRelease();
     this.setVal('audioGain', 'gain', idx, ev.target.value);
   }
   onChangeMute(idx, ev) {
+    if (this.playing) {
+      this.pause();
+      this.continueAfterRender = true;
+    }
     this.setVal('audioMute', 'mute', idx, ev.target.checked);
+    this.renderAudio();
   }
   onChangeOffset(idx, ev) {
+    if (this.playing) {
+      this.pause();
+      this.continueAfterRender = true;
+    }
     this.setVal('audioOffset', 'offset', idx, ev.target.value);
     this.calculateMinOffsetAndLength();
   }
@@ -469,17 +504,15 @@ class App extends React.Component {
     } else {
       return (
         <>
-          {this.state.audioRendering ? 'RENDERING!' : ''}
-          {!this.state.audioRendering && !this.state.audioRendered ? (
-            <button onClick={this.renderAudio.bind(this)}>RENDER</button>
-          ) : (
-            <></>
-          )}
           <div className='top-bar'>
             <div className='playing-control'>
-              <button onClick={this.togglePlay.bind(this)}>
-                {this.state.playing ? 'STOP' : 'PLAY'}
-              </button>
+              {this.state.audioRendered ? (
+                <button onClick={this.togglePlay.bind(this)}>
+                  {this.state.playing ? 'STOP' : 'PLAY'}
+                </button>
+              ) : (
+                <> Rendering </>
+              )}
               <button onClick={this.updateUI.bind(this)}>DEBUG</button>
               <div className='progress-text'>{this.genProgressText()}</div>
             </div>
