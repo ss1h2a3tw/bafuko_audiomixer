@@ -361,12 +361,17 @@ class App extends React.Component {
       let now = this.audio[idx];
       if (now.loaded) {
         let node = document.getElementsByClassName(now.amplitudeClass)[0];
-        node.style.transform = this.genAmpOffset(idx);
+        if (node !== undefined) {
+          node.style.transform = this.genAmpOffset(idx);
+        }
       }
     }
   }
   updateProgressText() {
     let node = document.getElementsByClassName('progress-text')[0];
+    if (node === undefined) {
+      return;
+    }
     node.innerHTML = this.genProgressText();
   }
   calculateProgressPercent() {
@@ -419,14 +424,14 @@ class App extends React.Component {
     let now = this.audio[idx];
     return (
       <div key={'audio' + idx}>
-        <div className='audio-name'>
-          {now.name}
-          {!now.loaded ? ' disabled' : ''}
-        </div>
         {!now.loaded ? (
           <></>
         ) : (
           <>
+            <div className='audio-name'>
+              {now.name}
+              {!now.loaded ? ' disabled' : ''}
+            </div>
             <input
               type='checkbox'
               value={this.state.audioMute[idx]}
@@ -448,6 +453,7 @@ class App extends React.Component {
               value={this.state.audioOffset[idx]}
               onChange={this.onChangeOffset.bind(this, idx)}
             />
+            {this.genAmplitudeGraph(idx)}
           </>
         )}
       </div>
@@ -509,23 +515,30 @@ class App extends React.Component {
       return element;
     });
   }
+  genPlayingControl() {
+    return (
+      <>
+        <button onClick={this.togglePlay.bind(this)}>
+          {this.state.playing ? 'STOP' : 'PLAY'}
+        </button>
+        <button onClick={this.downloadWAV.bind(this)}>DOWNLOAD</button>
+        <div className='progress-text'>{this.genProgressText()}</div>
+      </>
+    );
+  }
   render() {
-    if (!this.state.metaLoaded || this.isLoading()) {
-      return <>LOADING!</>;
+    if (!this.state.metaLoaded) {
+      return <>LOADING METADATA</>;
     } else {
       return (
         <>
           <div className='top-bar'>
             <div className='playing-control'>
-              {this.state.audioRendered ? (
-                <button onClick={this.togglePlay.bind(this)}>
-                  {this.state.playing ? 'STOP' : 'PLAY'}
-                </button>
-              ) : (
-                <> Rendering </>
-              )}
-              <button onClick={this.downloadWAV.bind(this)}>DOWNLOAD</button>
-              <div className='progress-text'>{this.genProgressText()}</div>
+              {this.isLoading()
+                ? 'LOADING'
+                : !this.state.audioRendered
+                ? 'RENDERING'
+                : this.genPlayingControl()}
             </div>
             <div
               className='progress-bar'
@@ -540,10 +553,6 @@ class App extends React.Component {
             </div>
           </div>
           {this.audio.map((e, i) => this.genAudioDiv(i))}
-          {this.genAmplitudeGraph(0)}
-          {this.genAmplitudeGraph(2)}
-          {this.genAmplitudeGraph(4)}
-          {this.genAmplitudeGraph(6)}
         </>
       );
     }
