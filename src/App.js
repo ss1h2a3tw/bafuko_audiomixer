@@ -29,6 +29,8 @@ class App extends React.Component {
       audioMute: [],
       playing: false,
       paused: false,
+      addingAudio: false,
+      newAudioName: '',
     };
     this.playing = false;
     this.paused = false;
@@ -36,6 +38,7 @@ class App extends React.Component {
     this.audio = [];
     this.intervalHandle = undefined;
     this.continueAfterRender = false;
+    this.uploadFileNode = React.createRef();
   }
   startUpdateInterval() {
     if (this.intervalHandle !== undefined) {
@@ -55,42 +58,76 @@ class App extends React.Component {
     fetch(META_URL)
       .then((res) => res.json())
       .then((res) => {
-        let pendingToLoad = [];
-        this.audio = res;
-        for (let audioElement of res) {
-          audioElement['gain'] = 100;
-          audioElement['mute'] = false;
-          audioElement['length'] = 0;
-          audioElement['sampleRate'] = 0;
-          audioElement['offset'] = 0;
-          audioElement['loaded'] = false;
-          audioElement['loading'] = false;
-        }
-        let nextState = {
-          metaLoaded: true,
-          audioLoaded: [],
-          audioLoading: [],
-          audioGain: [],
-          audioMute: [],
-          audioOffset: [],
-        };
-        for (const idx in res) {
-          nextState.audioLoaded.push(false);
-          nextState.audioLoading.push(res[idx].default);
-          nextState.audioGain.push(100);
-          nextState.audioMute.push(false);
-          nextState.audioOffset.push(0);
-          this.audio[idx].loading = res[idx].default;
-          if (res[idx].default) {
-            pendingToLoad.push(idx);
-          }
-        }
-        this.setState(nextState, () => {
-          for (const idx of pendingToLoad) {
-            this.loadAudio(idx);
-          }
+        console.log(res);
+        res.forEach((now) => {
+          this.addAudio(now.name, now.url, now.default);
         });
+        this.setState({ metaLoaded: true });
       });
+  }
+  addAudio(name, url, load) {
+    let newAudio = {
+      name: name,
+      url: url,
+      gain: 100,
+      mute: false,
+      length: 0,
+      sampleRate: 0,
+      offset: 0,
+      loading: load,
+      loaded: false,
+    };
+    let idx = this.audio.push(newAudio) - 1;
+    let arrayModifyHelper = (a, val, defaultVal) => {
+      let ret = [...a];
+      while (ret.length <= idx) {
+        ret.push(defaultVal);
+      }
+      ret[idx] = val;
+      return ret;
+    };
+    this.setState(
+      (prevState) => {
+        let nextAudioLoaded = arrayModifyHelper(
+          prevState.audioLoaded,
+          newAudio.loaded,
+          false
+        );
+        let nextAudioLoading = arrayModifyHelper(
+          prevState.audioLoading,
+          newAudio.loading,
+          false
+        );
+        let nextAudioGain = arrayModifyHelper(
+          prevState.audioGain,
+          newAudio.gain,
+          100
+        );
+        let nextAudioMute = arrayModifyHelper(
+          prevState.audioMute,
+          newAudio.mute,
+          false
+        );
+        let nextAudioOffset = arrayModifyHelper(
+          prevState.audioOffset,
+          newAudio.offset,
+          0
+        );
+        return {
+          audioLoaded: nextAudioLoaded,
+          audioLoading: nextAudioLoading,
+          audioGain: nextAudioGain,
+          audioMute: nextAudioMute,
+          audioOffset: nextAudioOffset,
+        };
+      },
+      () => {
+        if (load) {
+          this.loadAudio(idx);
+        }
+      }
+    );
+    return idx;
   }
   setAudioLoaded(idx) {
     this.audio[idx].loaded = true;
@@ -127,6 +164,16 @@ class App extends React.Component {
         this.genAmplitudeData(idx, buffer);
         this.setAudioLoaded(idx);
       });
+  }
+  loadAudioByArrayBuffer(idx, buffer) {
+    let audio = this.audio[idx];
+    audio.blob = new Blob([buffer]);
+    this.actx.decodeAudioData(buffer).then((buffer) => {
+      audio.length = buffer.length;
+      audio.sampleRate = buffer.sampleRate;
+      this.genAmplitudeData(idx, buffer);
+      this.setAudioLoaded(idx);
+    });
   }
   genAmplitudeDOM(idx) {
     let now = this.audio[idx];
@@ -526,13 +573,70 @@ class App extends React.Component {
       </>
     );
   }
+  onChangeName(ev) {
+    this.setState({ newAudioName: ev.target.value });
+  }
+  addFile() {
+    if (
+      this.state.newAudioName === '' ||
+      this.uploadFileNode.current.files.length === 0
+    ) {
+      this.setState({
+        errorMessage: 'Please select one file and input the track name',
+      });
+      return;
+    }
+    let idx = this.addAudio(this.state.newAudioName, 'local', false);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      this.loadAudioByArrayBuffer(idx, ev.target.result);
+    };
+    reader.readAsArrayBuffer(this.uploadFileNode.current.files[0]);
+    this.setState({
+      errorMessage: '',
+      newAudioName: '',
+      addingAudio: false,
+    });
+  }
+  renderDialog() {
+    if (!this.state.addingAudio) return <></>;
+    return (
+      <>
+        <div className='dialog-background'></div>
+        <div className='dialog-container'>
+          <div className='dialog'>
+            <button onClick={this.setAddingAudio.bind(this, false)}>
+              Close
+            </button>
+            <input
+              type='text'
+              value={this.state.newAudioName}
+              onChange={this.onChangeName.bind(this)}
+            ></input>
+            <input type='file' ref={this.uploadFileNode}></input>
+            {this.state.errorMessage}
+            <button onClick={this.addFile.bind(this)}>Add</button>
+          </div>
+        </div>
+      </>
+    );
+  }
+  setAddingAudio(val) {
+    this.setState({ addingAudio: val });
+  }
   render() {
     if (!this.state.metaLoaded) {
       return <>LOADING METADATA</>;
     } else {
       return (
         <>
+          {this.state.addingAudio ? this.renderDialog() : <></>}
           <div className='top-bar'>
+            <div className='add-audio-container'>
+              <button onClick={this.setAddingAudio.bind(this, true)}>
+                Add Track
+              </button>
+            </div>
             <div className='playing-control'>
               {this.isLoading()
                 ? 'LOADING'
