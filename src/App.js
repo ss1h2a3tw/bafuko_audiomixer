@@ -40,6 +40,7 @@ class App extends React.Component {
     this.intervalHandle = undefined;
     this.continueAfterRender = false;
     this.uploadFileNode = React.createRef();
+    this.length = 0;
   }
   startUpdateInterval() {
     if (this.intervalHandle !== undefined) {
@@ -321,6 +322,11 @@ class App extends React.Component {
       }
     }
   }
+  stop() {
+    this.mainNode.stop();
+    this.mainNode.disconnect();
+    this.updatePlayingState();
+  }
   setVal(stateArrayName, memberName, idx, val) {
     this.audio[idx][memberName] = val;
     this.setState((prevState) => {
@@ -348,12 +354,13 @@ class App extends React.Component {
     this.reRenderWhenRelease();
     this.setVal('audioGain', 'gain', idx, ev.target.value);
   }
-  onChangeMute(idx, ev) {
+  onChangeMute(idx) {
     if (this.playing) {
       this.pause();
       this.continueAfterRender = true;
     }
-    this.setVal('audioMute', 'mute', idx, ev.target.checked);
+    let val = !this.audio[idx].mute;
+    this.setVal('audioMute', 'mute', idx, val);
     this.renderAudio();
   }
   onChangeOffset(idx, ev) {
@@ -366,12 +373,17 @@ class App extends React.Component {
   }
   genAmpOffset(idx) {
     let now = this.audio[idx];
+    let mul = now.gain / 100;
+    if (now.mute) {
+      mul = 0;
+    }
     // move to center first
     let transform = 'translateX(50vw)';
     let progress =
       (this.getPlayingProgress() + this.minOffset - now.offset / 1000) *
       -PIXEL_PER_SEC;
     transform += 'translateX(' + Math.round(progress).toString() + 'px)';
+    transform += 'scaleY(' + mul.toString() + ')';
     return transform;
   }
   genAmplitudeGraphElement(audioIdx, val, idx) {
@@ -379,7 +391,9 @@ class App extends React.Component {
       <div
         className='amp-graph-element'
         key={'ampEle' + audioIdx.toString() + '-' + idx.toString()}
-        style={{ height: Math.round(1000 * val).toString() + 'px' }}
+        style={{
+          height: Math.min(100, Math.round(1000 * val).toString()) + 'px',
+        }}
       ></div>
     );
   }
@@ -419,10 +433,13 @@ class App extends React.Component {
   }
   updateProgressText() {
     let node = document.getElementsByClassName('progress-text')[0];
-    if (node === undefined) {
-      return;
+    if (node !== undefined) {
+      node.innerHTML = this.genTimeStringFromSec(this.getPlayingProgress());
     }
-    node.innerHTML = this.genProgressText();
+    node = document.getElementsByClassName('progress-text-length')[0];
+    if (node !== undefined) {
+      node.innerHTML = this.genTimeStringFromSec(this.length / SAMPLE_RATE);
+    }
   }
   calculateProgressPercent() {
     return (this.getPlayingProgress() / (this.length / SAMPLE_RATE)) * 100;
@@ -474,37 +491,47 @@ class App extends React.Component {
     let now = this.audio[idx];
     return (
       <div key={'audio' + idx}>
-        {!now.loaded ? (
-          <></>
-        ) : (
-          <>
-            <div className='audio-name'>
-              {now.name}
-              {!now.loaded ? ' disabled' : ''}
+        {!now.loaded && !now.loading ? null : (
+          <div className='audio-container'>
+            <div className='audio-control'>
+              <div className='audio-name'>{now.name}</div>
+              <div className='volume-control'>
+                <button
+                  className='mute'
+                  value={this.state.audioMute[idx]}
+                  disabled={!now.loaded}
+                  onClick={this.onChangeMute.bind(this, idx)}
+                >
+                  {this.state.audioMute[idx] ? (
+                    <i className='fas fa-volume-off'></i>
+                  ) : (
+                    <i className='fas fa-volume-up'></i>
+                  )}
+                </button>
+                <input
+                  type='range'
+                  min='0'
+                  max='150'
+                  value={this.state.audioGain[idx]}
+                  className='slider'
+                  disabled={!now.loaded}
+                  onChange={this.onChangeGain.bind(this, idx)}
+                />
+              </div>
+              <div className='offset-control'>
+                <input
+                  className='offset-control-slider'
+                  title='offset (ms)'
+                  type='number'
+                  step='any'
+                  value={this.state.audioOffset[idx]}
+                  disabled={!now.loaded}
+                  onChange={this.onChangeOffset.bind(this, idx)}
+                />
+              </div>
             </div>
-            <input
-              type='checkbox'
-              value={this.state.audioMute[idx]}
-              disabled={!now.loaded}
-              onChange={this.onChangeMute.bind(this, idx)}
-            />
-            <input
-              type='range'
-              min='0'
-              max='150'
-              value={this.state.audioGain[idx]}
-              className='slider'
-              disabled={!now.loaded}
-              onChange={this.onChangeGain.bind(this, idx)}
-            />
-            <input
-              type='number'
-              step='any'
-              value={this.state.audioOffset[idx]}
-              onChange={this.onChangeOffset.bind(this, idx)}
-            />
             {this.genAmplitudeGraph(idx)}
-          </>
+          </div>
         )}
       </div>
     );
@@ -566,13 +593,35 @@ class App extends React.Component {
     });
   }
   genPlayingControl() {
+    let disabled = this.isLoading() || !this.state.audioRendered;
     return (
       <>
-        <button onClick={this.togglePlay.bind(this)}>
-          {this.state.playing ? 'STOP' : 'PLAY'}
+        <button
+          className='player-button'
+          disabled={disabled}
+          onClick={this.togglePlay.bind(this)}
+        >
+          {this.state.playing ? (
+            <i className='fas fa-pause'></i>
+          ) : (
+            <i className='fas fa-play'></i>
+          )}
         </button>
-        <button onClick={this.downloadWAV.bind(this)}>DOWNLOAD</button>
-        <div className='progress-text'>{this.genProgressText()}</div>
+        <button
+          className='player-button'
+          disabled={disabled}
+          onClick={this.stop.bind(this)}
+        >
+          <i className='fas fa-stop'></i>
+        </button>
+        <button
+          className='player-button'
+          disabled={disabled}
+          onClick={this.downloadWAV.bind(this)}
+          title='WAVでダウンロード'
+        >
+          <i className='fas fa-arrow-down'></i>
+        </button>
       </>
     );
   }
@@ -671,27 +720,36 @@ class App extends React.Component {
           {this.state.addingAudio ? this.renderDialog() : <></>}
           <div className='top-bar'>
             <div className='add-audio-container'>
-              <button onClick={this.setAddingAudio.bind(this, true)}>
-                Add Track
+              <button
+                className='player-button'
+                onClick={this.setAddingAudio.bind(this, true)}
+              >
+                <i className='fas fa-plus'></i>
               </button>
             </div>
-            <div className='playing-control'>
-              {this.isLoading()
-                ? 'LOADING'
-                : !this.state.audioRendered
-                ? 'RENDERING'
-                : this.genPlayingControl()}
-            </div>
-            <div
-              className='progress-bar'
-              onMouseDown={this.handleProgressBarMouseDown.bind(this)}
-            >
+            <div className='playing-control'>{this.genPlayingControl()}</div>
+            <div className='progress-ui'>
+              <div className='progress-text'>
+                {this.genTimeStringFromSec(this.getPlayingProgress())}
+              </div>
               <div
-                className='progress'
-                style={{
-                  width: this.calculateProgressPercent().toString() + '%',
-                }}
-              ></div>
+                className='progress-bar'
+                onMouseDown={this.handleProgressBarMouseDown.bind(this)}
+              >
+                {!this.isLoading() ? (
+                  <div
+                    className='progress'
+                    style={{
+                      width: this.calculateProgressPercent().toString() + '%',
+                    }}
+                  ></div>
+                ) : (
+                  <></>
+                )}
+              </div>
+              <div className='progress-text-length'>
+                {this.genTimeStringFromSec(this.length / SAMPLE_RATE)}
+              </div>
             </div>
           </div>
           {this.audio.map((e, i) => this.genAudioDiv(i))}
