@@ -31,6 +31,7 @@ class App extends React.Component {
       paused: false,
       addingAudio: false,
       newAudioName: '',
+      loadAdditionalIdx: -1,
     };
     this.playing = false;
     this.paused = false;
@@ -600,6 +601,29 @@ class App extends React.Component {
       addingAudio: false,
     });
   }
+  onChangeSelect(ev) {
+    this.setState({ loadAdditionalIdx: ev.target.value });
+  }
+  addAdditional() {
+    if (this.state.loadAdditionalIdx !== -1) {
+      this.loadAudio(this.state.loadAdditionalIdx);
+      this.setState({ addingAudio: false, loadAdditionalIdx: -1 });
+    }
+  }
+  genAdditionalAudioOption() {
+    let ret = [];
+    for (let idx in this.audio) {
+      let now = this.audio[idx];
+      if (!now.loaded && now.url !== 'local') {
+        ret.push(
+          <option key={'additional-' + idx.toString()} value={idx}>
+            {now.name}
+          </option>
+        );
+      }
+    }
+    return ret;
+  }
   renderDialog() {
     if (!this.state.addingAudio) return <></>;
     return (
@@ -610,14 +634,26 @@ class App extends React.Component {
             <button onClick={this.setAddingAudio.bind(this, false)}>
               Close
             </button>
-            <input
-              type='text'
-              value={this.state.newAudioName}
-              onChange={this.onChangeName.bind(this)}
-            ></input>
-            <input type='file' ref={this.uploadFileNode}></input>
-            {this.state.errorMessage}
-            <button onClick={this.addFile.bind(this)}>Add</button>
+            <div className='file-upload'>
+              <input
+                type='text'
+                value={this.state.newAudioName}
+                onChange={this.onChangeName.bind(this)}
+              ></input>
+              <input type='file' ref={this.uploadFileNode}></input>
+              {this.state.errorMessage}
+              <button onClick={this.addFile.bind(this)}>Add</button>
+            </div>
+            <div className='load-additional'>
+              <select
+                value={this.state.loadAdditionalIdx}
+                onChange={this.onChangeSelect.bind(this)}
+              >
+                <option value={-1}>Select one track</option>
+                {this.genAdditionalAudioOption()}
+              </select>
+              <button onClick={this.addAdditional.bind(this)}>Add</button>
+            </div>
           </div>
         </div>
       </>
