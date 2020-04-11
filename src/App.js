@@ -304,6 +304,8 @@ class App extends React.Component {
     this.mainNode.disconnect();
     this.pausedAt = this.getPlayingProgress();
     this.paused = true;
+    this.playing = false;
+    this.mainNode.onended = undefined;
     this.updatePlayingState();
     // state will change on the onended callback
   }
