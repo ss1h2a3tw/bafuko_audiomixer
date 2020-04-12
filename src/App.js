@@ -40,7 +40,8 @@ class App extends React.Component {
     this.intervalHandle = undefined;
     this.continueAfterRender = false;
     this.uploadFileNode = React.createRef();
-    this.length = 0;
+    // Prevent crashing on chrome
+    this.length = 1;
   }
   startUpdateInterval() {
     if (this.intervalHandle !== undefined) {
