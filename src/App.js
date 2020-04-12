@@ -399,11 +399,52 @@ class App extends React.Component {
       ></div>
     );
   }
+  handleAmpMouseMove(startX, pausedAt, ev) {
+    let sec = (startX - ev.clientX) / PIXEL_PER_SEC;
+    let newPausedAt = pausedAt + sec;
+    newPausedAt = Math.max(0, newPausedAt);
+    newPausedAt = Math.min(this.length / SAMPLE_RATE, newPausedAt);
+    this.pausedAt = newPausedAt;
+    this.updateUI();
+  }
+  handleAmpMouseUp(startX, pausedAt, wasPlaying, ev) {
+    window.removeEventListener('mouseup', this.mouseUpHandler);
+    window.removeEventListener('mousemove', this.mouseMoveHandler);
+    this.handleAmpMouseMove(startX, pausedAt, ev);
+    if (wasPlaying) {
+      this.startFrom(this.pausedAt);
+    }
+  }
+  handleAmpMouseDown(ev) {
+    let wasPlaying = this.playing;
+    if (wasPlaying) {
+      this.pause();
+    }
+    this.paused = true;
+    let pausedAt = this.pausedAt;
+    let startX = ev.clientX;
+    this.mouseUpHandler = this.handleAmpMouseUp.bind(
+      this,
+      startX,
+      pausedAt,
+      wasPlaying
+    );
+    this.mouseMoveHandler = this.handleAmpMouseMove.bind(
+      this,
+      startX,
+      pausedAt
+    );
+    window.addEventListener('mouseup', this.mouseUpHandler);
+    window.addEventListener('mousemove', this.mouseMoveHandler);
+  }
   genAmplitudeGraph(idx) {
     const name = 'amp-graph-' + idx.toString();
     this.audio[idx].amplitudeClass = name;
     return (
-      <div className='amp-container'>
+      <div
+        className='amp-container'
+        onMouseDown={this.handleAmpMouseDown.bind(this)}
+      >
         <div className='amp-graph-cover'></div>
         <div
           className={'amp-graph ' + name}
