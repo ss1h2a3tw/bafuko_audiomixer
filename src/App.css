@@ -34,7 +34,7 @@ body {
   background-color: #5e8f9c;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 3;
 }
 
 .add-audio-container {
@@ -88,12 +88,75 @@ body {
   position: fixed;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 .dialog {
-  width: 50%;
-  height: 50%;
+  width: 60em;
+  height: 20em;
   background-color: green;
   opacity: 1;
+  display: flex;
+  flex-direction: column;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+.dialog-title {
+  text-align: center;
+  font-size: 2em;
+  border-bottom: 3px solid black;
+}
+
+.dialog-add-container {
+  padding-top: 0.5em;
+  flex: 1;
+  display: flex;
+  padding-bottom: 0.5em;
+  margin-bottom: 1em;
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-add-block {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 50%;
+  padding: 0.4em;
+  margin: 0.1em;
+  border-radius: 0.2em;
+  border: 2px solid black;
+}
+
+.dialog-add-block-title {
+  text-align:center;
+  font-size: 1.2em;
+  padding-bottom: 0.2em;
+}
+
+.dialog-add-block-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+.dialog-add-block-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.2em;
+  padding-bottom: 0.5em;
+}
+
+.dialog-add-block-file-title {
+  margin-bottom: 1em;
 }
 
 .player-button {
