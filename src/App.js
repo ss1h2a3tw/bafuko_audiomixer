@@ -60,7 +60,6 @@ class App extends React.Component {
     fetch(META_URL)
       .then((res) => res.json())
       .then((res) => {
-        console.log(res);
         res.forEach((now) => {
           this.addAudio(now.name, now.url, now.default);
         });
@@ -185,14 +184,10 @@ class App extends React.Component {
   }
   genAmplitudeData(idx, audioBuffer) {
     let now = this.audio[idx];
-    console.log(audioBuffer.numberOfChannels);
-    console.log(audioBuffer.sampleRate);
-    console.log(audioBuffer.length);
     let data = [];
     for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
       data.push(audioBuffer.getChannelData(i));
     }
-    console.log(data);
     let normalized = [];
     let i = 0;
     const bin_size = audioBuffer.sampleRate / SAMPLE_BIN_DIV;
@@ -210,7 +205,6 @@ class App extends React.Component {
     }
     now['amplitudeData'] = normalized;
     this.genAmplitudeDOM(idx);
-    console.log(normalized);
   }
   calculateMinOffsetAndLength() {
     // max sample count (as SAMPLE_RATE)
