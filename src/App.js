@@ -705,6 +705,7 @@ class App extends React.Component {
       return;
     }
     let idx = this.addAudio(this.state.newAudioName, 'local', false, 0);
+    this.setVal('audioLoading', 'loading', idx, true);
     const reader = new FileReader();
     reader.onload = (ev) => {
       this.loadAudioByArrayBuffer(idx, ev.target.result);
@@ -721,6 +722,12 @@ class App extends React.Component {
   }
   addAdditional() {
     if (this.state.loadAdditionalIdx !== -1) {
+      this.setVal(
+        'audioLoading',
+        'loading',
+        this.state.loadAdditionalIdx,
+        true
+      );
       this.loadAudio(this.state.loadAdditionalIdx);
       this.setState({ addingAudio: false, loadAdditionalIdx: -1 });
     }
