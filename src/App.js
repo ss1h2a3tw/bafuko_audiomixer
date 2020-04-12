@@ -745,14 +745,31 @@ class App extends React.Component {
     }
     return ret;
   }
+  handleFileChange() {
+    if (
+      this.state.newAudioName === '' &&
+      this.uploadFileNode.current.files.length === 1
+    ) {
+      let name = this.uploadFileNode.current.files[0].name;
+      this.setState({ newAudioName: name });
+    } else {
+      // Force update
+      this.setState({ newAudioName: this.state.newAudioName });
+    }
+  }
   renderDialog() {
     if (!this.state.addingAudio) return <></>;
+    let addedFile =
+      this.uploadFileNode.current &&
+      this.uploadFileNode.current.files.length === 1;
+    let selectedAudio = this.state.loadAdditionalIdx !== -1;
     return (
       <>
-        <div className='dialog-background' onClick={this.setAddingAudio.bind(this, false)}></div>
         <div
-          className='dialog-container'
-        >
+          className='dialog-background'
+          onClick={this.setAddingAudio.bind(this, false)}
+        ></div>
+        <div className='dialog-container'>
           <div className='dialog'>
             <div className='dialog-title'>トラック追加</div>
             <div className='dialog-add-container'>
@@ -770,11 +787,16 @@ class App extends React.Component {
                     className='dialog-add-block-file-selection'
                     type='file'
                     ref={this.uploadFileNode}
+                    onChange={this.handleFileChange.bind(this)}
                   ></input>
                 </div>
                 <div className='dialog-add-block-footer'>
                   {this.state.errorMessage}
-                  <button class='add-btn' onClick={this.addFile.bind(this)}>
+                  <button
+                    className='add-btn'
+                    onClick={this.addFile.bind(this)}
+                    disabled={!addedFile}
+                  >
                     追加
                   </button>
                 </div>
@@ -786,14 +808,15 @@ class App extends React.Component {
                     value={this.state.loadAdditionalIdx}
                     onChange={this.onChangeSelect.bind(this)}
                   >
-                    <option value={-1}>Select one track</option>
+                    <option value={-1}>共有トラックを選択</option>
                     {this.genAdditionalAudioOption()}
                   </select>
                 </div>
                 <div className='dialog-add-block-footer'>
                   <button
-                    class='add-btn'
+                    className='add-btn'
                     onClick={this.addAdditional.bind(this)}
+                    disabled={!selectedAudio}
                   >
                     追加
                   </button>
