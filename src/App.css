@@ -7,6 +7,7 @@ body {
   align-items: center;
   width: max-content;
   height: 100%;
+  z-index: -3;
 }
 
 .amp-graph-element {
@@ -31,6 +32,9 @@ body {
   padding-right: 0.5em;
   padding-bottom: 0.2em;
   background-color: #5e8f9c;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .add-audio-container {
@@ -71,8 +75,8 @@ body {
 .dialog-background {
   width: 100%;
   height: 100%;
-  z-index: 1;
-  background-color: white;
+  z-index: 5;
+  background-color: black;
   position: fixed;
   pointer-events: none;
   opacity: 0.5;
@@ -80,7 +84,7 @@ body {
 .dialog-container {
   width: 100%;
   height: 100%;
-  z-index: 2;
+  z-index: 6;
   position: fixed;
   display: flex;
   align-items: center;
@@ -106,6 +110,7 @@ body {
   font-weight: bold;
   position: relative;
   height: 100px;
+  border-bottom: 1px solid black;
 }
 
 .mute {
@@ -125,10 +130,17 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  background-color: rgba(255,255,255,0.1);
+  padding-right: 0.5em;
+  z-index: 2;
 }
 
 .volume-control {
   display:flex;
+}
+
+.volume-control-input {
+  flex: 1;
 }
 
 .offset-control {
@@ -136,6 +148,15 @@ body {
   color: #bdc2c9;
   font-weight: normal;
 }
-.offset-control-text {
-  padding-right: 0.5em;
+.offset-control-input {
+  flex: 1;
+}
+
+.amp-graph-cover {
+  position: absolute;
+  width: 50%;
+  height: 100%;
+  background-color: #212a35;
+  z-index: 1;
+  opacity: 0.7;
 }

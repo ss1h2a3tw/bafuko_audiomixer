@@ -351,8 +351,10 @@ class App extends React.Component {
     window.addEventListener('mouseup', this.mouseUpHandler);
   }
   onChangeGain(idx, ev) {
-    this.reRenderWhenRelease();
     this.setVal('audioGain', 'gain', idx, ev.target.value);
+  }
+  onGainMouseDown(idx) {
+    this.reRenderWhenRelease();
   }
   onChangeMute(idx) {
     if (this.playing) {
@@ -402,6 +404,7 @@ class App extends React.Component {
     this.audio[idx].amplitudeClass = name;
     return (
       <div className='amp-container'>
+        <div className='amp-graph-cover'></div>
         <div
           className={'amp-graph ' + name}
           style={{ transform: this.genAmpOffset(idx) }}
@@ -494,7 +497,12 @@ class App extends React.Component {
         {!now.loaded && !now.loading ? null : (
           <div className='audio-container'>
             <div className='audio-control'>
-              <div className='audio-name'>{now.name}</div>
+              <div className='audio-name'>
+                {now.name}{' '}
+                {now.loading ? (
+                  <i className='fas fa-cloud-download-alt'></i>
+                ) : null}
+              </div>
               <div className='volume-control'>
                 <button
                   className='mute'
@@ -509,18 +517,19 @@ class App extends React.Component {
                   )}
                 </button>
                 <input
+                  className='volume-control-input'
                   type='range'
                   min='0'
                   max='150'
                   value={this.state.audioGain[idx]}
-                  className='slider'
                   disabled={!now.loaded}
                   onChange={this.onChangeGain.bind(this, idx)}
+                  onMouseDown={this.onGainMouseDown.bind(this, idx)}
                 />
               </div>
               <div className='offset-control'>
                 <input
-                  className='offset-control-slider'
+                  className='offset-control-input'
                   title='offset (ms)'
                   type='number'
                   step='any'
