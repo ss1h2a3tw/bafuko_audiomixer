@@ -529,13 +529,14 @@ class App extends React.Component {
               </div>
               <div className='offset-control'>
                 <input
-                  className='offset-control-input'
+                  className='effset-control-input'
                   title='offset (ms)'
                   type='number'
                   step='any'
                   value={this.state.audioOffset[idx]}
                   disabled={!now.loaded}
                   onChange={this.onChangeOffset.bind(this, idx)}
+                  onBlur={this.renderAudio.bind(this)}
                 />
               </div>
             </div>
