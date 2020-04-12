@@ -1,6 +1,6 @@
 [
     {
-      "origin": ["http://localhost:3000", "https://audiomixer.bafuko.moe"],
+      "origin": ["http://localhost:3000", "https://audiomixer.bafuko.moe", "http://192.168.1.3:3000"],
       "responseHeader": ["Content-Type"],
       "method": ["GET"],
       "maxAgeSeconds": 3600
