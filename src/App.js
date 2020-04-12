@@ -61,12 +61,12 @@ class App extends React.Component {
       .then((res) => res.json())
       .then((res) => {
         res.forEach((now) => {
-          this.addAudio(now.name, now.url, now.default);
+          this.addAudio(now.name, now.url, now.default, now.offset);
         });
         this.setState({ metaLoaded: true });
       });
   }
-  addAudio(name, url, load) {
+  addAudio(name, url, load, offset) {
     let newAudio = {
       name: name,
       url: url,
@@ -74,7 +74,7 @@ class App extends React.Component {
       mute: false,
       length: 0,
       sampleRate: 0,
-      offset: 0,
+      offset: offset,
       loading: load,
       loaded: false,
     };
@@ -704,7 +704,7 @@ class App extends React.Component {
       });
       return;
     }
-    let idx = this.addAudio(this.state.newAudioName, 'local', false);
+    let idx = this.addAudio(this.state.newAudioName, 'local', false, 0);
     const reader = new FileReader();
     reader.onload = (ev) => {
       this.loadAudioByArrayBuffer(idx, ev.target.result);
