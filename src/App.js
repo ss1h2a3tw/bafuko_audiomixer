@@ -408,6 +408,7 @@ class App extends React.Component {
   }
   handleAmpMouseMove(startX, pausedAt, ev) {
     ev.preventDefault();
+    ev.stopPropagation();
     this.clearSelection();
     let sec = (startX - ev.clientX) / PIXEL_PER_SEC;
     let newPausedAt = pausedAt + sec;
@@ -418,6 +419,7 @@ class App extends React.Component {
   }
   handleAmpMouseUp(startX, pausedAt, wasPlaying, ev) {
     ev.preventDefault();
+    ev.stopPropagation();
     this.clearSelection();
     window.removeEventListener('mouseup', this.mouseUpHandler);
     window.removeEventListener('dragend', this.mouseUpHandler);
@@ -429,6 +431,7 @@ class App extends React.Component {
   }
   handleAmpMouseDown(ev) {
     ev.preventDefault();
+    ev.stopPropagation();
     this.clearSelection();
     let wasPlaying = this.playing;
     if (wasPlaying) {
@@ -456,7 +459,10 @@ class App extends React.Component {
     const name = 'amp-graph-' + idx.toString();
     this.audio[idx].amplitudeClass = name;
     return (
-      <div className='amp-container'>
+      <div
+        className='amp-container'
+        onMouseDown={this.handleAmpMouseDown.bind(this)}
+      >
         <div className='amp-graph-cover'></div>
         <div
           className={'amp-graph ' + name}
