@@ -755,7 +755,7 @@ class App extends React.Component {
                 <div className='dialog-add-block-footer'>
                   {this.state.errorMessage}
                   <button class='add-btn' onClick={this.addFile.bind(this)}>
-                    Add
+                    追加
                   </button>
                 </div>
               </div>
@@ -775,7 +775,7 @@ class App extends React.Component {
                     class='add-btn'
                     onClick={this.addAdditional.bind(this)}
                   >
-                    Add
+                    追加
                   </button>
                 </div>
               </div>
@@ -785,7 +785,7 @@ class App extends React.Component {
                 class='btn btn-secondary'
                 onClick={this.setAddingAudio.bind(this, false)}
               >
-                Close
+                閉じる
               </button>
             </div>
           </div>
