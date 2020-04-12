@@ -688,7 +688,10 @@ class App extends React.Component {
     return (
       <>
         <div className='dialog-background'></div>
-        <div className='dialog-container'>
+        <div
+          className='dialog-container'
+          onClick={this.setAddingAudio.bind(this, false)}
+        >
           <div className='dialog'>
             <div className='dialog-title'>トラック追加</div>
             <div className='dialog-add-container'>
