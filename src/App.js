@@ -411,7 +411,7 @@ class App extends React.Component {
     window.removeEventListener('mouseup', this.mouseUpHandler);
     window.removeEventListener('mousemove', this.mouseMoveHandler);
     this.handleAmpMouseMove(startX, pausedAt, ev);
-    if (wasPlaying) {
+    if (wasPlaying && this.playing == false) {
       this.startFrom(this.pausedAt);
     }
   }
