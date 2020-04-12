@@ -399,7 +399,16 @@ class App extends React.Component {
       ></div>
     );
   }
+  clearSelection() {
+    if (document.selection) {
+      document.selection.empty();
+    } else {
+      window.getSelection().removeAllRanges();
+    }
+  }
   handleAmpMouseMove(startX, pausedAt, ev) {
+    ev.preventDefault();
+    this.clearSelection();
     let sec = (startX - ev.clientX) / PIXEL_PER_SEC;
     let newPausedAt = pausedAt + sec;
     newPausedAt = Math.max(0, newPausedAt);
@@ -408,14 +417,19 @@ class App extends React.Component {
     this.updateUI();
   }
   handleAmpMouseUp(startX, pausedAt, wasPlaying, ev) {
+    ev.preventDefault();
+    this.clearSelection();
     window.removeEventListener('mouseup', this.mouseUpHandler);
+    window.removeEventListener('dragend', this.mouseUpHandler);
     window.removeEventListener('mousemove', this.mouseMoveHandler);
     this.handleAmpMouseMove(startX, pausedAt, ev);
-    if (wasPlaying && this.playing == false) {
+    if (wasPlaying && this.playing === false) {
       this.startFrom(this.pausedAt);
     }
   }
   handleAmpMouseDown(ev) {
+    ev.preventDefault();
+    this.clearSelection();
     let wasPlaying = this.playing;
     if (wasPlaying) {
       this.pause();
@@ -435,16 +449,14 @@ class App extends React.Component {
       pausedAt
     );
     window.addEventListener('mouseup', this.mouseUpHandler);
+    window.addEventListener('dragend', this.mouseUpHandler);
     window.addEventListener('mousemove', this.mouseMoveHandler);
   }
   genAmplitudeGraph(idx) {
     const name = 'amp-graph-' + idx.toString();
     this.audio[idx].amplitudeClass = name;
     return (
-      <div
-        className='amp-container'
-        onMouseDown={this.handleAmpMouseDown.bind(this)}
-      >
+      <div className='amp-container'>
         <div className='amp-graph-cover'></div>
         <div
           className={'amp-graph ' + name}
@@ -530,6 +542,9 @@ class App extends React.Component {
       ' / ' +
       this.genTimeStringFromSec(this.length / SAMPLE_RATE)
     );
+  }
+  nullDragHandler(ev) {
+    ev.preventDefault();
   }
   genAudioDiv(idx) {
     let now = this.audio[idx];
