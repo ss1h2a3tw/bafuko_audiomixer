@@ -690,34 +690,33 @@ class App extends React.Component {
         <div className='dialog-background'></div>
         <div className='dialog-container'>
           <div className='dialog'>
-            <div className='dialog-title'>
-              トラック追加
-            </div>
+            <div className='dialog-title'>トラック追加</div>
             <div className='dialog-add-container'>
               <div className='file-upload dialog-add-block'>
-                <div className='dialog-add-block-title'>
-                  パソコンから
-                </div>
+                <div className='dialog-add-block-title'>パソコンから</div>
                 <div className='dialog-add-block-body'>
                   <input
                     className='dialog-add-block-file-title'
                     type='text'
                     value={this.state.newAudioName}
                     onChange={this.onChangeName.bind(this)}
+                    placeholder='タイトル'
                   ></input>
                   <input
                     className='dialog-add-block-file-selection'
-                    type='file' ref={this.uploadFileNode}></input>
+                    type='file'
+                    ref={this.uploadFileNode}
+                  ></input>
                 </div>
                 <div className='dialog-add-block-footer'>
                   {this.state.errorMessage}
-                  <button onClick={this.addFile.bind(this)}>Add</button>
+                  <button class='add-btn' onClick={this.addFile.bind(this)}>
+                    Add
+                  </button>
                 </div>
               </div>
               <div className='load-additional dialog-add-block'>
-                <div className='dialog-add-block-title'>
-                  共有トラックから
-                </div>
+                <div className='dialog-add-block-title'>共有トラックから</div>
                 <div className='dialog-add-block-body'>
                   <select
                     value={this.state.loadAdditionalIdx}
@@ -728,12 +727,20 @@ class App extends React.Component {
                   </select>
                 </div>
                 <div className='dialog-add-block-footer'>
-                  <button onClick={this.addAdditional.bind(this)}>Add</button>
+                  <button
+                    class='add-btn'
+                    onClick={this.addAdditional.bind(this)}
+                  >
+                    Add
+                  </button>
                 </div>
               </div>
             </div>
             <div className='dialog-footer'>
-              <button onClick={this.setAddingAudio.bind(this, false)}>
+              <button
+                class='btn btn-secondary'
+                onClick={this.setAddingAudio.bind(this, false)}
+              >
                 Close
               </button>
             </div>

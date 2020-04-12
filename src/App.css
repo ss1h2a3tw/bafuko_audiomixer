@@ -31,6 +31,7 @@ body {
   padding-left: 0.5em;
   padding-right: 0.5em;
   padding-bottom: 0.2em;
+  padding-top: 0.2em;
   background-color: #5e8f9c;
   position: sticky;
   top: 0;
@@ -93,18 +94,22 @@ body {
 .dialog {
   width: 60em;
   height: 20em;
-  background-color: green;
+  background-color: #1d2934;
+  color: #bdc2c9;
   opacity: 1;
   display: flex;
   flex-direction: column;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+  padding-top: 0.7em;
+  padding-left: 0.7em;
+  padding-right: 0.7em;
+  padding-bottom: 0.7em;
+  border-radius: 2px;
 }
 
 .dialog-title {
   text-align: center;
   font-size: 2em;
-  border-bottom: 3px solid black;
+  border-bottom: 2px solid #3c4144;
 }
 
 .dialog-add-container {
@@ -112,7 +117,6 @@ body {
   flex: 1;
   display: flex;
   padding-bottom: 0.5em;
-  margin-bottom: 1em;
 }
 
 .dialog-footer {
@@ -129,7 +133,7 @@ body {
   padding: 0.4em;
   margin: 0.1em;
   border-radius: 0.2em;
-  border: 2px solid black;
+  border: 2px solid #3c4144;
 }
 
 .dialog-add-block-title {
@@ -152,7 +156,6 @@ body {
   display: flex;
   justify-content: center;
   padding-top: 0.2em;
-  padding-bottom: 0.5em;
 }
 
 .dialog-add-block-file-title {
@@ -166,6 +169,7 @@ body {
   width: 40px;
   height: 40px;
   padding: 3px;
+  display: inherit;
 }
 
 .audio-container {
@@ -222,4 +226,21 @@ body {
   background-color: #212a35;
   z-index: 1;
   opacity: 0.7;
+}
+
+.add-btn {
+  background-color: #4d6e8c;
+  color: white;
+  border: none;
+  padding: .375rem .75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  border-radius: .25rem;
+  display: inline-block;
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+.add-btn:hover {
+  background-color: #6794be;
 }
