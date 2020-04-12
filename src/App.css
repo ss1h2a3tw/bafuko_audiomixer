@@ -14,7 +14,7 @@ body {
   width: 4px;
   margin-left: 2px;
   margin-right: 2px;
-  background-color: green;
+  background-color: #64a585;
 }
 
 .amp-container {
@@ -31,7 +31,7 @@ body {
   padding-left: 0.5em;
   padding-right: 0.5em;
   padding-bottom: 0.2em;
-  padding-top: 0.2em;
+  padding-top: 0.3em;
   background-color: #5e8f9c;
   position: sticky;
   top: 0;
@@ -53,7 +53,7 @@ body {
 }
 
 .progress {
-  background-color: green;
+  background-color: #97f0c4;
   height: 100%;
   border-radius: 0.4em;
 }
@@ -186,8 +186,10 @@ body {
   border: none;
   font-size: 20px;
   width: 30px;
-  height: 30px;
   padding: 3px;
+  display: flex;
+  align-items: center;
+  padding-top: 0.2em;
 }
 
 .audio-control {
@@ -204,10 +206,12 @@ body {
 
 .volume-control {
   display:flex;
+  align-items: center;
 }
 
 .volume-control-input {
   flex: 1;
+  height: 100%;
 }
 
 .offset-control {
@@ -243,4 +247,9 @@ body {
 
 .add-btn:hover {
   background-color: #6794be;
+}
+
+.offset-control-input {
+  height: 1.5em;
+  font-size: 1em;
 }

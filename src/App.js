@@ -517,7 +517,7 @@ class App extends React.Component {
                   )}
                 </button>
                 <input
-                  className='volume-control-input'
+                  className='volume-control-input custom-range'
                   type='range'
                   min='0'
                   max='150'
@@ -529,7 +529,7 @@ class App extends React.Component {
               </div>
               <div className='offset-control'>
                 <input
-                  className='effset-control-input'
+                  className='offset-control-input form-control col-form-label-sm'
                   title='offset (ms)'
                   type='number'
                   step='any'
